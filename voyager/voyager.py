@@ -47,7 +47,7 @@ class Voyager:
         openai_api_request_timeout: int = 240,
         ckpt_dir: str = "ckpt",
         skill_library_dir: str = None,
-        resume: bool = False,
+        resume: bool = True,
     ):
         """
         The main class for Voyager.

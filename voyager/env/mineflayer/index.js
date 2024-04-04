@@ -34,6 +34,12 @@ app.post("/start", (req, res) => {
         checkTimeoutInterval: 60 * 60 * 1000,
     });
     bot.once("error", onConnectionFailed);
+    // // Event subscriptions
+    bot.waitTicks = req.body.waitTicks;
+    bot.globalTickCounter = 0;
+    bot.stuckTickCounter = 0;
+    bot.stuckPosList = [];
+    bot.iron_pickaxe = false;
 
     // Event subscriptions
     bot.waitTicks = req.body.waitTicks;
@@ -42,27 +48,28 @@ app.post("/start", (req, res) => {
     bot.stuckPosList = [];
     bot.iron_pickaxe = false;
 
-    bot.on("kicked", onDisconnect);
-
-    // mounting will cause physicsTick to stop
-    bot.on("mount", () => {
-        bot.dismount();
-    });
-
     bot.once("spawn", async () => {
+    //    bot.chat(`/item replace entity @s armor.chest with diamond_chestplate`);
+
         bot.removeListener("error", onConnectionFailed);
         let itemTicks = 1;
         if (req.body.reset === "hard") {
             bot.chat("/clear @s");
             bot.chat("/kill @s");
             const inventory = req.body.inventory ? req.body.inventory : {};
-            const equipment = req.body.equipment
-                ? req.body.equipment
-                : [null, null, null, null, null, null];
+            // const equipment = req.body.equipment ? req.body.equipment : [null, "diamond_chestplate", null, null, null, null];
             for (let key in inventory) {
                 bot.chat(`/give @s minecraft:${key} ${inventory[key]}`);
                 itemTicks += 1;
             }
+            const equipment = [
+                "diamond_helmet",
+                "diamond_chestplate",
+                "diamond_leggings",
+                "diamond_boots",
+                "diamond_sword",
+                "torch"
+            ];
             const equipmentNames = [
                 "armor.head",
                 "armor.chest",
@@ -72,22 +79,22 @@ app.post("/start", (req, res) => {
                 "weapon.offhand",
             ];
             for (let i = 0; i < 6; i++) {
+                // bot.chat('GOT HERE');
                 if (i === 4) continue;
-                if (equipment[i]) {
+                // if (!equipment[i]) {
                     bot.chat(
                         `/item replace entity @s ${equipmentNames[i]} with minecraft:${equipment[i]}`
-                    );
-                    itemTicks += 1;
-                }
+                        );
+                        itemTicks += 1;
+                    // }
             }
+            
         }
-
         if (req.body.position) {
-            bot.chat(
-                `/tp @s ${req.body.position.x} ${req.body.position.y} ${req.body.position.z}`
-            );
-        }
-
+                    bot.chat(
+                        `/tp @s ${req.body.position.x} ${req.body.position.y} ${req.body.position.z}`
+                    );
+                }
         // if iron_pickaxe is in bot's inventory
         if (
             bot.inventory.items().find((item) => item.name === "iron_pickaxe")
@@ -104,10 +111,8 @@ app.post("/start", (req, res) => {
         bot.loadPlugin(tool);
         bot.loadPlugin(collectBlock);
         bot.loadPlugin(pvp);
-        bot.loadPlugin(minecraftHawkEye);
+        // bot.loadPlugin(minecraftHawkEye);
 
-        // bot.collectBlock.movements.digCost = 0;
-        // bot.collectBlock.movements.placeCost = 0;
 
         obs.inject(bot, [
             OnChat,
@@ -122,17 +127,118 @@ app.post("/start", (req, res) => {
         skills.inject(bot);
 
         if (req.body.spread) {
-            bot.chat(`/spreadplayers ~ ~ 0 300 under 80 false @s`);
-            await bot.waitForTicks(bot.waitTicks);
-        }
-
-        await bot.waitForTicks(bot.waitTicks * itemTicks);
-        res.json(bot.observe());
-
-        initCounter(bot);
-        bot.chat("/gamerule keepInventory true");
-        bot.chat("/gamerule doDaylightCycle false");
+                    bot.chat(`/spreadplayers ~ ~ 0 300 under 80 false @s`);
+                    await bot.waitForTicks(bot.waitTicks);
+                }
+        
+                await bot.waitForTicks(bot.waitTicks * itemTicks);
+                res.json(bot.observe());
+        
+                initCounter(bot);
+                bot.chat("/gamerule keepInventory true");
+                bot.chat("/gamerule doDaylightCycle false");
     });
+    
+    // // // Event subscriptions
+    // bot.waitTicks = req.body.waitTicks;
+    // bot.globalTickCounter = 0;
+    // bot.stuckTickCounter = 0;
+    // bot.stuckPosList = [];
+    // bot.iron_pickaxe = false;
+    
+    bot.on("kicked", onDisconnect);
+    
+    // mounting will cause physicsTick to stop
+    bot.on("mount", () => {
+            bot.dismount();
+        });
+    });
+
+    // bot.once("spawn", async () => {
+    //     bot.removeListener("error", onConnectionFailed);
+        // let itemTicks = 1;
+    //     if (req.body.reset === "hard") {
+    //         bot.chat("/clear @s");
+    //         bot.chat("/kill @s");
+    //         const inventory = req.body.inventory ? req.body.inventory : {};
+    //         const equipment = req.body.equipment
+    //             ? req.body.equipment
+    //             : [null, null, null, null, null, null];
+    //         for (let key in inventory) {
+    //             bot.chat(`/give @s minecraft:${key} ${inventory[key]}`);
+    //             itemTicks += 1;
+    //         }
+    //         const equipmentNames = [
+    //     "diamond_helmet",
+    //     "diamond_chestplate",
+    //     "diamond_leggings",
+    //     "diamond_boots",
+    //     "diamond_sword",
+    //     "totem_of_undying",
+    // ];
+            // for (let i = 0; i < 6; i++) {
+            //     if (i === 4) continue;
+            //     if (equipment[i]) {
+            //         bot.chat(
+            //             `/item replace entity @s ${equipmentNames[i]} with minecraft:${equipment[i]}`
+            //         );
+            //         itemTicks += 1;
+            //     }
+            // }
+    //         }
+    //     }
+
+    //     if (req.body.position) {
+    //         bot.chat(
+    //             `/tp @s ${req.body.position.x} ${req.body.position.y} ${req.body.position.z}`
+    //         );
+    //     }
+
+    //     // if iron_pickaxe is in bot's inventory
+    //     if (
+    //         bot.inventory.items().find((item) => item.name === "iron_pickaxe")
+    //     ) {
+    //         bot.iron_pickaxe = true;
+    //     }
+
+    //     const { pathfinder } = require("mineflayer-pathfinder");
+    //     const tool = require("mineflayer-tool").plugin;
+    //     const collectBlock = require("mineflayer-collectblock").plugin;
+    //     const pvp = require("mineflayer-pvp").plugin;
+    //     const minecraftHawkEye = require("minecrafthawkeye");
+    //     bot.loadPlugin(pathfinder);
+    //     bot.loadPlugin(tool);
+    //     bot.loadPlugin(collectBlock);
+    //     bot.loadPlugin(pvp);
+    //     bot.loadPlugin(minecraftHawkEye);
+
+    //     bot.collectBlock.movements.digCost = 0;
+    //     bot.collectBlock.movements.placeCost = 0;
+
+    //     obs.inject(bot, [
+    //         OnChat,
+    //         OnError,
+    //         Voxels,
+    //         Status,
+    //         Inventory,
+    //         OnSave,
+    //         Chests,
+    //         BlockRecords,
+    //     ]);
+    //     skills.inject(bot);
+
+    //     if (req.body.spread) {
+    //         bot.chat(`/spreadplayers ~ ~ 0 300 under 80 false @s`);
+    //         await bot.waitForTicks(bot.waitTicks);
+    //     }
+
+        // await bot.waitForTicks(bot.waitTicks * itemTicks);
+        // res.json(bot.observe());
+
+    //     initCounter(bot);
+    //     bot.chat("/gamerule keepInventory true");
+    //     bot.chat("/gamerule doDaylightCycle false");
+    // });
 
     function onConnectionFailed(e) {
         console.log(e);
@@ -147,7 +253,7 @@ app.post("/start", (req, res) => {
         console.log(message);
         bot = null;
     }
-});
+// });
 
 app.post("/step", async (req, res) => {
     // import useful package
